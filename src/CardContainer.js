@@ -4,10 +4,13 @@ import Card from './Card';
 
 
 
-function CardContainer(){
+function CardContainer() {
   const [deckId, setDeckId] = useState("");
   const [cardImage, setCardImage] = useState(null);
-  // const timerId = useRef();
+  const [isDrawing, setisDrawing] = useState(false);
+  const [cardsRemaining, setCardsRemaining] = useState(52);
+  const timerId = useRef();
+
 
   useEffect(() => {
     async function getDeck() {
@@ -17,32 +20,35 @@ function CardContainer(){
     getDeck();
   }, [setDeckId]);
 
-  // useEffect(() => {
-  //   timerId.current = setInterval(()
-
-  //   const intervalCards = setInterval(() => {
-  //    async function drawCard(id){
-  //      let cardResponse = await axios.get(`https://deckofcardsapi.com/api/deck/${id}/draw/?count=1`)
-  //      let responseCardImage = cardResponse.data.cards[0].image;
-  //      setCardImage(responseCardImage);
-  //    }
-  //  }, 2000);
-
-  // })
-
-
-
-  async function drawCard(id){
+  useEffect(() => {
+    if (isDrawing) {
+      timerId.current = setInterval(() =>
+        drawCard(deckId)
+        , 500);
+    }
+    return () => {
+      console.log("unmount ID", timerId.current);
+      clearInterval(timerId.current);
+    }
+  }, [deckId, isDrawing]);
+  
+  async function drawCard(id) {
     let cardResponse = await axios.get(`https://deckofcardsapi.com/api/deck/${id}/draw/?count=1`)
-    let responseCardImage = cardResponse.data.cards[0].image;
-    setCardImage(responseCardImage);
+    let responseCard = cardResponse.data.cards[0];
+    if(responseCard === undefined){
+      setisDrawing(false);
+    } else {
+      setCardImage(responseCard.image);
+      setCardsRemaining(cardResponse.data.remaining);
+    }
+    console.log(cardResponse.data.remaining);
   }
 
   return (
     <div>
       <p>{deckId}</p>
-      <button onClick={() => drawCard(deckId) }>Get Card!</button>
-      {cardImage && <Card image={cardImage} />}
+  <button onClick={() => setisDrawing(!isDrawing)}>{isDrawing ? "STOP!!!!!" : "Start Drawing Cards"}</button>
+      {cardsRemaining < 1 ? <p>NONE LEFT</p> : (cardImage && <Card image={cardImage} />)}
     </div>
   )
 }
